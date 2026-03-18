@@ -1,0 +1,20 @@
+{
+  "default_year_end_month": 12,
+  "clients": [
+    {
+      "name": "Example Client",
+      "drive_folder": "Example Client | Jane Smith",
+      "email": "client@example.com",
+      "year_end_month": 12,
+      "frequency": "monthly"
+    },
+    {
+      "name": "Another Client",
+      "drive_folder": "Another Client | John Doe",
+      "reporting_folder": "Quarterly Reporting",
+      "email": "another@example.com",
+      "year_end_month": 12,
+      "frequency": "quarterly"
+    }
+  ]
+}

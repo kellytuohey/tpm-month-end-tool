@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TPM Month-End Tool</title>
+  <link rel="icon" href="/static/favicon.png" type="image/png" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f7f5f2;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px 60px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    header img.logo {
+      height: 64px;
+      margin-bottom: 6px;
+    }
+    header p {
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #999;
+      margin-top: 8px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 4px;
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 580px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 24px rgba(0,0,0,0.04);
+      border-top: 3px solid #c9a020;
+    }
+
+    .field { margin-bottom: 22px; }
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 7px;
+    }
+    select, input[type="text"], input[type="month"], textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid #e0ddd8;
+      border-radius: 3px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #1a1a1a;
+      background: #fdfcfa;
+      transition: border-color 0.15s;
+      appearance: auto;
+    }
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: #c9a020;
+      background: #fff;
+    }
+    textarea { resize: vertical; min-height: 130px; }
+
+    #drop-zone {
+      border: 1.5px dashed #d4cfc8;
+      border-radius: 3px;
+      padding: 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: #fdfcfa;
+    }
+    #drop-zone:hover, #drop-zone.drag-over {
+      border-color: #c9a020;
+      background: #fdf9ee;
+    }
+    #drop-zone p { font-size: 14px; color: #aaa; }
+    #drop-zone p span { color: #c9a020; font-weight: 600; cursor: pointer; }
+    #file-list { margin-top: 10px; }
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #1a1a1a;
+      padding: 4px 0;
+    }
+    .file-item::before { content: '📄'; }
+    #file-input { display: none; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #f0ede8;
+      margin: 8px 0 22px;
+    }
+
+    #generate-btn {
+      width: 100%;
+      padding: 15px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      margin-top: 6px;
+    }
+    #generate-btn:hover { background: #333; }
+    #generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #status {
+      margin-top: 18px;
+      padding: 13px 16px;
+      border-radius: 3px;
+      font-size: 14px;
+      display: none;
+    }
+    #status.loading {
+      display: block;
+      background: #fdf9ee;
+      color: #8a6b00;
+      border: 1px solid #e8d48a;
+    }
+    #status.success {
+      display: block;
+      background: #f2f9f4;
+      color: #1a5c30;
+      border: 1px solid #a8d4b4;
+    }
+    #status.error {
+      display: block;
+      background: #fdf2f2;
+      color: #9b1c1c;
+      border: 1px solid #f0b8b8;
+    }
+
+    #callouts-box {
+      display: none;
+      margin-top: 16px;
+      padding: 16px 18px;
+      background: #fdfcfa;
+      border: 1px solid #e8e4dc;
+      border-left: 3px solid #c9a020;
+      border-radius: 3px;
+    }
+    #callouts-box h3 {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 10px;
+    }
+    #callouts-list { list-style: none; }
+    #callouts-list li {
+      font-size: 14px;
+      color: #1a1a1a;
+      padding: 4px 0 4px 16px;
+      position: relative;
+      line-height: 1.5;
+    }
+    #callouts-list li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: #c9a020;
+    }
+
+    #drive-links { margin-top: 10px; }
+    .drive-link {
+      display: block;
+      font-size: 13px;
+      color: #c9a020;
+      text-decoration: none;
+      margin-top: 4px;
+    }
+    .drive-link:hover { text-decoration: underline; }
+
+    .spinner {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border: 2px solid #e8d48a;
+      border-top-color: #8a6b00;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img class="logo" src="/static/logo.png" alt="The Prosperity Maven Bookkeeping"
+         onerror="this.style.display='none'; document.getElementById('logo-text').style.display='block'" />
+    <div id="logo-text" style="display:none; font-size:18px; font-weight:700; letter-spacing:1px;">THE PROSPERITY MAVEN</div>
+    <p>Month-End Delivery Tool</p>
+  </header>
+
+  <div class="card">
+
+    <div class="field">
+      <label for="client-select">Client</label>
+      <select id="client-select" disabled>
+        <option value="">Loading clients…</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="report-month">Report Month</label>
+      <input type="month" id="report-month" />
+    </div>
+
+    <hr class="divider" />
+
+    <div class="field">
+      <label for="personal-note">Personal Note <span style="font-weight:400;color:#bbb;">(optional)</span></label>
+      <input type="text" id="personal-note" placeholder="e.g. Loved your latest reel! Big month for you." />
+    </div>
+
+    <div class="field">
+      <label for="cap-link">Cap.so Video Link</label>
+      <input type="text" id="cap-link" placeholder="https://cap.link/..." />
+    </div>
+
+    <div class="field">
+      <label for="transcript">Transcript</label>
+      <textarea id="transcript" placeholder="Paste the video transcript here…"></textarea>
+    </div>
+
+    <div class="field">
+      <label>PDF Report(s)</label>
+      <div id="drop-zone">
+        <p>Drop PDF(s) here or <span onclick="document.getElementById('file-input').click()">click to browse</span></p>
+        <div id="file-list"></div>
+      </div>
+      <input type="file" id="file-input" accept=".pdf" multiple />
+    </div>
+
+    <button id="generate-btn" disabled>Generate &amp; Send</button>
+
+    <div id="status"></div>
+
+    <div id="callouts-box">
+      <h3>Key Callouts</h3>
+      <ul id="callouts-list"></ul>
+      <div id="drive-links"></div>
+    </div>
+
+  </div>
+
+  <script>
+    let selectedClient = null;
+    let selectedFiles = [];
+
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    document.getElementById('report-month').value =
+      `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+
+    async function init() { loadClients(); }
+
+    async function loadClients() {
+      const select = document.getElementById('client-select');
+      try {
+        const res = await fetch('/api/clients');
+        const data = await res.json();
+        select.innerHTML = '<option value="">Select a client…</option>';
+        data.clients.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = JSON.stringify(c);
+          opt.textContent = c.name;
+          select.appendChild(opt);
+        });
+        select.disabled = false;
+        checkReady();
+      } catch (e) {
+        select.innerHTML = '<option value="">Failed to load clients</option>';
+      }
+    }
+
+    document.getElementById('client-select').addEventListener('change', function () {
+      selectedClient = this.value ? JSON.parse(this.value) : null;
+      checkReady();
+    });
+
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+
+    dropZone.addEventListener('click', e => {
+      if (e.target.tagName !== 'SPAN') fileInput.click();
+    });
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      addFiles(Array.from(e.dataTransfer.files));
+    });
+    fileInput.addEventListener('change', () => addFiles(Array.from(fileInput.files)));
+
+    function addFiles(files) {
+      const pdfs = files.filter(f => f.type === 'application/pdf');
+      if (pdfs.length !== files.length) alert('Only PDF files are accepted.');
+      selectedFiles = [...selectedFiles, ...pdfs];
+      renderFileList();
+      checkReady();
+    }
+
+    function renderFileList() {
+      const list = document.getElementById('file-list');
+      list.innerHTML = '';
+      dropZone.querySelector('p').style.display = selectedFiles.length ? 'none' : '';
+      selectedFiles.forEach((f, i) => {
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        div.textContent = f.name;
+        list.appendChild(div);
+      });
+    }
+
+    function checkReady() {
+      document.getElementById('generate-btn').disabled = !(selectedClient && selectedFiles.length > 0);
+    }
+
+    document.getElementById('generate-btn').addEventListener('click', async () => {
+      const capLink      = document.getElementById('cap-link').value.trim();
+      const transcript   = document.getElementById('transcript').value.trim();
+
+      if (!capLink)    { alert('Please enter the Cap.so link.'); return; }
+      if (!transcript) { alert('Please paste the transcript.'); return; }
+
+      setStatus('loading', 'Uploading, extracting highlights, creating draft…');
+      document.getElementById('generate-btn').disabled = true;
+      document.getElementById('callouts-box').style.display = 'none';
+
+      await submitForm(false, '');
+    });
+
+    async function submitForm(forceCreate, fileAction) {
+      const capLink      = document.getElementById('cap-link').value.trim();
+      const transcript   = document.getElementById('transcript').value.trim();
+      const personalNote = document.getElementById('personal-note').value.trim();
+      const monthVal     = document.getElementById('report-month').value;
+      const [yr, mo]   = monthVal.split('-');
+      const monthLabel = new Date(yr, mo - 1).toLocaleString('en-CA', { month: 'long', year: 'numeric' });
+
+      const form = new FormData();
+      form.append('client_name',  selectedClient.name);
+      form.append('drive_folder',     selectedClient.drive_folder);
+      form.append('reporting_folder', selectedClient.reporting_folder);
+      form.append('client_email', selectedClient.email);
+      form.append('cap_link',      capLink);
+      form.append('transcript',    transcript);
+      form.append('personal_note',  personalNote);
+      form.append('fiscal_year',  selectedClient.fiscal_year);
+      form.append('report_month', monthLabel);
+      form.append('force_create', forceCreate ? 'true' : 'false');
+      form.append('file_action', fileAction || '');
+      selectedFiles.forEach(f => form.append('pdf', f, f.name));
+
+      try {
+        const res  = await fetch('/api/generate', { method: 'POST', body: form });
+        const data = await res.json();
+
+        if (data.folder_missing) {
+          document.getElementById('generate-btn').disabled = false;
+          setStatus('error',
+            `✕ ${data.message} &nbsp;<button onclick="confirmCreate()" style="background:#1a1a1a;color:#fff;border:none;padding:6px 14px;border-radius:3px;cursor:pointer;font-size:13px;">Yes, create it</button>`
+          );
+        } else if (data.duplicate_files) {
+          document.getElementById('generate-btn').disabled = false;
+          const btn = (label, action) => `<button onclick="resolveFile('${action}')" style="background:#1a1a1a;color:#fff;border:none;padding:6px 14px;border-radius:3px;cursor:pointer;font-size:13px;margin-left:6px;">${label}</button>`;
+          setStatus('error', `✕ ${data.message} &nbsp;${btn('Overwrite', 'overwrite')}${btn('Keep Both', 'add')}`);
+        } else if (data.error) {
+          setStatus('error', '✕ ' + data.error);
+        } else {
+          setStatus('success', '✓ ' + data.message);
+
+          const list = document.getElementById('callouts-list');
+          list.innerHTML = '';
+          data.callouts.forEach(c => {
+            const li = document.createElement('li');
+            li.textContent = c;
+            list.appendChild(li);
+          });
+
+          const linksDiv = document.getElementById('drive-links');
+          linksDiv.innerHTML = '';
+          data.drive_links.forEach(url => {
+            const a = document.createElement('a');
+            a.href = url; a.target = '_blank';
+            a.className = 'drive-link';
+            a.textContent = 'View in Google Drive →';
+            linksDiv.appendChild(a);
+          });
+
+          document.getElementById('callouts-box').style.display = 'block';
+        }
+      } catch (e) {
+        setStatus('error', '✕ Something went wrong. Check Terminal for details.');
+      }
+
+      document.getElementById('generate-btn').disabled = false;
+    }
+
+    function confirmCreate() {
+      setStatus('loading', 'Creating folder and continuing…');
+      document.getElementById('generate-btn').disabled = true;
+      submitForm(true, '');
+    }
+
+    function resolveFile(action) {
+      setStatus('loading', action === 'overwrite' ? 'Overwriting existing file…' : 'Adding new copy…');
+      document.getElementById('generate-btn').disabled = true;
+      submitForm(false, action);
+    }
+
+    function setStatus(type, msg) {
+      const el = document.getElementById('status');
+      el.className = type;
+      el.style.display = 'block';
+      el.innerHTML = type === 'loading' ? `<span class="spinner"></span>${msg}` : msg;
+    }
+
+    init();
+  </script>
+</body>
+</html>

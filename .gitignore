@@ -1,0 +1,19 @@
+# Secrets - never commit these
+.env
+google_token.json
+client_secret_*.json
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Mac
+.DS_Store
+
+# Claude
+.claude/
+
+# Generated files
+generated_imgs/
